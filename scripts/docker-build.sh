@@ -1,7 +1,7 @@
 #!/bin/bash
 
 dockerUserName="rkuzner"
-imageVersion="0.1.0"
+imageVersion="0.1.1"
 
 # to run this commands, you should be logged to docker-hub!
 docker info | grep -q "Username"

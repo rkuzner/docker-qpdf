@@ -27,6 +27,16 @@ The format is based on [Keep a Changelog][web_changelog], and this project adher
 
 > Please list here the soon-to-be-released features
 
+## 0.1.1 - 2025-08-14
+
+![img_add]
+
+- encapsulate tool into unpriviledged user
+- allow crontab schedule via env vars
+- encapsulate tool run in single script to be used by crontab and single runs consistently
+- sample `env-vars.conf` & `passwords.csv` files
+- docker image & manifest build script
+
 ## 0.1.0 - 2025-08-10
 
 ![img_add]

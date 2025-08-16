@@ -16,6 +16,7 @@ function set_logFolder() {
 	fi
 	logFolder=${folderName}
 	logFile="${logFolder}/${scriptBaseName}-$( date +%F ).log"
+	echo "set_logFolder(): logFile will be ${logFile}"
 }
 
 # logs a message to console AND to logfile (if available)

@@ -1,8 +1,9 @@
 #!/bin/bash
 
 dockerUserName="rkuzner"
-imageVersion="0.1.1"
 imageName="docker-qpdf"
+imageVersion="0.1.2"
+platformCodeList="amd64 arm64"
 
 # to run this commands, you should be logged to docker-hub!
 docker info | grep -q "Username"
@@ -12,25 +13,66 @@ if [ ${isLogged} -gt 0 ]; then
     docker login -u ${dockerUserName}
 fi
 
-# build platform specific images
-docker build --platform linux/amd64 -t ${dockerUserName}/${imageName}:${imageVersion}-amd64 .
-docker push ${dockerUserName}/${imageName}:${imageVersion}-amd64
+function build_image() {
+    platformCode=${1}
+    if [ -z "${platformCode}" ]; then
+        echo "Missing Platform Code"
+        return
+    fi
+    docker build --platform linux/${platformCode} -t ${dockerUserName}/${imageName}:${imageVersion}-${platformCode} .
+    docker push ${dockerUserName}/${imageName}:${imageVersion}-${platformCode}
+}
 
-docker build --platform linux/arm64 -t ${dockerUserName}/${imageName}:${imageVersion}-arm64 .
-docker push ${dockerUserName}/${imageName}:${imageVersion}-arm64
+function create_manifest() {
+    manifestVersion=${1}
+    if [ -z "${manifestVersion}" ]; then
+        echo "Missing Manifest Version"
+        return
+    fi
+    docker manifest rm ${dockerUserName}/${imageName}:${manifestVersion}
 
-# create version specific manifest
-docker manifest rm ${dockerUserName}/${imageName}:${imageVersion}
-docker manifest create ${dockerUserName}/${imageName}:${imageVersion} \
---amend ${dockerUserName}/${imageName}:${imageVersion}-amd64 \
---amend ${dockerUserName}/${imageName}:${imageVersion}-arm64
+    local ammendImageList=""
+    for individualPlatformCode in ${platformCodeList}; do
+        ammendImageList="${ammendImageList} --amend ${dockerUserName}/${imageName}:${imageVersion}-${individualPlatformCode}"
+    done
 
-docker manifest push ${dockerUserName}/${imageName}:${imageVersion}
+    docker manifest create ${dockerUserName}/${imageName}:${manifestVersion} ${ammendImageList}
+}
 
-# create latest manifest
-docker manifest rm ${dockerUserName}/${imageName}:latest
-docker manifest create ${dockerUserName}/${imageName}:latest \
---amend ${dockerUserName}/${imageName}:${imageVersion}-amd64 \
---amend ${dockerUserName}/${imageName}:${imageVersion}-arm64
+function build_image_and_create_manifest() {
+    # build platform specific images
+    for individualPlatformCode in ${platformCodeList}; do
+        build_image ${individualPlatformCode}
+    done
 
-docker manifest push ${dockerUserName}/${imageName}:latest
+    # create manifests
+    for label in "${imageVersion}" "latest"; do
+        create_manifest ${label}
+    done
+}
+
+function buildx_images() {
+    if [ -z "${platformCodeList}" ]; then
+        echo "Missing Platform Code List"
+        return
+    fi
+
+    local buildxPlatformList=""
+    local buildxPlatformListSeparator=""
+    for individualPlatformCode in ${platformCodeList}; do
+        buildxPlatformList="${buildxPlatformList}${buildxPlatformListSeparator}linux/${individualPlatformCode}"
+        if [ -z "${buildxPlatformListSeparator}" ]; then
+            buildxPlatformListSeparator=","
+        fi
+    done
+
+    for label in "${imageVersion}" "latest"; do
+        echo "DEBUG: docker buildx build --platform ${buildxPlatformList} -t ${dockerUserName}/${imageName}:${label} --push ."
+        docker-buildx build --platform ${buildxPlatformList} -t ${dockerUserName}/${imageName}:${label} --push .
+    done
+}
+
+
+# now create images
+# old way: build_image_and_create_manifest
+buildx_images

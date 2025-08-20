@@ -2,6 +2,11 @@
 
 # import log_message function
 scriptFolder=$( cd "$( dirname "${0}" )" && pwd )
+configFileName="${scriptFolder}/${scriptBaseName}.conf"
+if [ -f "${configFileName}" ]; then
+	# shellcheck disable=SC1090
+	source "${configFileName}"
+fi
 source "${scriptFolder}/log-message.sh"
 
 DEFAULT_LOG_FOLDER="/logs"
@@ -15,15 +20,10 @@ TARGET_FOLDER=""
 KEEP_SOURCEFILE=""
 MOVE_UNENCRYPTED=""
 
-
-configFileName="${scriptFolder}/${scriptBaseName}.conf"
 if [ -f "${configFileName}" ]; then
 	log_message "Found Config file!"
-	# shellcheck disable=SC1090
-	source "${configFileName}"
-
 else
-  log_message "Config file not found: ${configFileName}, using default values"
+	log_message "Config file not found: ${configFileName}, using default values"
 fi
 
 if [ -z "${LOG_FOLDER}" ]; then
@@ -31,45 +31,45 @@ if [ -z "${LOG_FOLDER}" ]; then
 fi
 set_logFolder ${LOG_FOLDER}
 if [ -z "${SOURCE_FOLDER}" ]; then
-SOURCE_FOLDER="${DEFAULT_SOURCE_FOLDER}"
+	SOURCE_FOLDER="${DEFAULT_SOURCE_FOLDER}"
 fi
 if [ -z "${TARGET_FOLDER}" ]; then
-TARGET_FOLDER="${DEFAULT_TARGET_FOLDER}"
+	TARGET_FOLDER="${DEFAULT_TARGET_FOLDER}"
 fi
 if [ -z "${KEEP_SOURCEFILE}" ]; then
-KEEP_SOURCEFILE="${DEFAULT_KEEP_SOURCEFILE}"
+	KEEP_SOURCEFILE="${DEFAULT_KEEP_SOURCEFILE}"
 fi
 if [ -z "${MOVE_UNENCRYPTED}" ]; then
-MOVE_UNENCRYPTED="${DEFAULT_MOVE_UNENCRYPTED}"
+	MOVE_UNENCRYPTED="${DEFAULT_MOVE_UNENCRYPTED}"
 fi
 
 log_message "Checking for passwords file"
 if [ -z "${PASSWORDS_FILENAME}" ]; then
-  log_message "No PASSWORDS_FILENAME environment var Found!"
-  exit 11
+	log_message "No PASSWORDS_FILENAME environment var Found!"
+	exit 11
 fi
 log_message "Found PASSWORDS_FILENAME environment var!"
 
 if [ ! -f "${PASSWORDS_FILENAME}" ]; then
-  log_message "Passwords file not-found: ${PASSWORDS_FILENAME}"
-  exit 12
+	log_message "Passwords file not-found: ${PASSWORDS_FILENAME}"
+	exit 12
 fi
 log_message "Found Passwords file!"
 
 lineCount=$( grep -e plain -e base64 "${PASSWORDS_FILENAME}" | wc -l )
 passwordCount=$( expr ${lineCount} + 0 )
 if [ ${passwordCount} -eq 0 ]; then
-  log_message "No Passwords found on file ${PASSWORDS_FILENAME}"
-  exit 13
+	log_message "No Passwords found on file ${PASSWORDS_FILENAME}"
+	exit 13
 fi
 log_message "Found ${passwordCount} Passwords in file!"
 
 log_message "Checking for source files"
 folderContents=$( ls -1 ${SOURCE_FOLDER} )
 if [ -z "${folderContents}" ]; then
-  log_message "No files found on source folder."
-  log_message "Nothing to do!"
-  exit 0
+	log_message "No files found on source folder."
+	log_message "Nothing to do!"
+	exit 0
 fi
 
 log_message "Preparing passwords list"

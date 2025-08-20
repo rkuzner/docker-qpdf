@@ -1,5 +1,8 @@
 #!/bin/bash
 scriptBaseName=$( basename "${0}" .sh )
+if [ -n "${TOOL_NAME}" ]; then
+	scriptBaseName="${scriptBaseName}-"$( echo ${TOOL_NAME} | tr "[:upper:]" "[:lower:]" )
+fi
 
 logFile=""
 logFolder=""

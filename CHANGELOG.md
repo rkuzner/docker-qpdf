@@ -27,7 +27,7 @@ The format is based on [Keep a Changelog][web_changelog], and this project adher
 
 > Please list here the soon-to-be-released features
 
-## 0.1.1 - 2025-08-14
+## 0.1.1 - 2025-08-20
 
 ![img_add]
 

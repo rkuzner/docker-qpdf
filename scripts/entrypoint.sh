@@ -17,7 +17,14 @@ set_logFolder ${LOG_FOLDER}
 
 log_message " -+*+- -+*+- -+*+- -+*+- "
 log_message "Preparing tool-run.conf file..."
-echo "#!/bin/bash" > /home/conusr/tool-run.conf
+echo "#!/bin/bash" > /home/theuser/tool-run.conf
+
+# evaluate if TOOL_NAME was set on ENV, if so, append to conf file
+if [ -n "${TOOL_NAME}" ]; then
+  log_message "Found TOOL_NAME environment var!"
+  log_message "Append TOOL_NAME info to tool-run.conf file"
+  echo 'TOOL_NAME="'${TOOL_NAME}'"' >> /home/theuser/tool-run.conf
+fi
 
 # evaluate if SOURCE_FOLDER was set on ENV, if so, only use if valid
 if [ -n "${SOURCE_FOLDER}" ]; then
@@ -29,7 +36,7 @@ if [ -n "${SOURCE_FOLDER}" ]; then
 fi
 log_message "Using SOURCE_FOLDER: ${DEFAULT_SOURCE_FOLDER}"
 log_message "Append SOURCE_FOLDER info to tool-run.conf file"
-echo 'SOURCE_FOLDER="'${SOURCE_FOLDER}'"' >> /home/conusr/tool-run.conf
+echo 'SOURCE_FOLDER="'${SOURCE_FOLDER}'"' >> /home/theuser/tool-run.conf
 
 # evaluate if TARGET_FOLDER was set on ENV, if so, only use if valid
 if [ -n "${TARGET_FOLDER}" ]; then
@@ -41,7 +48,7 @@ if [ -n "${TARGET_FOLDER}" ]; then
 fi
 log_message "Using TARGET_FOLDER: ${DEFAULT_TARGET_FOLDER}"
 log_message "Append TARGET_FOLDER info to tool-run.conf file"
-echo 'TARGET_FOLDER="'${TARGET_FOLDER}'"' >> /home/conusr/tool-run.conf
+echo 'TARGET_FOLDER="'${TARGET_FOLDER}'"' >> /home/theuser/tool-run.conf
 
 # evaluate if KEEP_SOURCEFILE was set on ENV, if so, only use if valid
 if [ -n "${KEEP_SOURCEFILE}" ]; then
@@ -53,7 +60,7 @@ if [ -n "${KEEP_SOURCEFILE}" ]; then
 fi
 log_message "Using KEEP_SOURCEFILE: ${DEFAULT_KEEP_SOURCEFILE}"
 log_message "Append KEEP_SOURCEFILE to tool-run.conf file"
-echo 'KEEP_SOURCEFILE="'${DEFAULT_KEEP_SOURCEFILE}'"' >> /home/conusr/tool-run.conf
+echo 'KEEP_SOURCEFILE="'${DEFAULT_KEEP_SOURCEFILE}'"' >> /home/theuser/tool-run.conf
 
 # evaluate if KEEP_SOURCEFILE was set on ENV, if so, only use if valid
 if [ -n "${MOVE_UNENCRYPTED}" ]; then
@@ -65,10 +72,10 @@ if [ -n "${MOVE_UNENCRYPTED}" ]; then
 fi
 log_message "Using MOVE_UNENCRYPTED: ${DEFAULT_MOVE_UNENCRYPTED}"
 log_message "Append MOVE_UNENCRYPTED to tool-run.conf file"
-echo 'MOVE_UNENCRYPTED="'${DEFAULT_MOVE_UNENCRYPTED}'"' >> /home/conusr/tool-run.conf
+echo 'MOVE_UNENCRYPTED="'${DEFAULT_MOVE_UNENCRYPTED}'"' >> /home/theuser/tool-run.conf
 
 log_message "Append PASSWORDS_FILENAME info to tool-run.conf file"
-echo 'PASSWORDS_FILENAME="'${PASSWORDS_FILENAME}'"' >> /home/conusr/tool-run.conf
+echo 'PASSWORDS_FILENAME="'${PASSWORDS_FILENAME}'"' >> /home/theuser/tool-run.conf
 
 log_message "Done preparing tool-run.conf file."
 
@@ -77,10 +84,10 @@ if [ -n "${TOOL_SCHEDULE}" ]; then
   log_message "Found TOOL_SCHEDULE environment var!"
 
   log_message "Clear crontab schedule"
-  crontab -u conusr -r 2>/dev/null | tee -a "${logFile}"
+  crontab -u theuser -r 2>/dev/null | tee -a "${logFile}"
 
   log_message "Set crontab schedule"
-  echo "${TOOL_SCHEDULE} /home/conusr/tool-run.sh" | crontab -u conusr -
+  echo "${TOOL_SCHEDULE} /home/theuser/tool-run.sh" | crontab -u theuser -
 
   log_message "restart cron service"
   service cron restart
@@ -91,7 +98,7 @@ if [ -n "${TOOL_SCHEDULE}" ]; then
 else
   log_message "No TOOL_SCHEDULE environment var Found!"
   log_message "This is a Single run!"
-  exec /home/conusr/tool-run.sh
+  exec /home/theuser/tool-run.sh
   exit ${?}
 fi
 

@@ -3,9 +3,10 @@ FROM debian:stable-slim
 # update image packages
 RUN apt-get update && apt-get upgrade -y && apt-get autoremove -y
 
+# install sudo to support running tool as unpriviledged user
 # install cron daemon to support in-container cron schedule
 # install qPDF tool onto the image
-RUN apt-get install -y cron qpdf
+RUN apt-get install -y sudo cron qpdf
 
 # add a user so the tool is encapsulated
 RUN useradd -m -U -G users,crontab -s /bin/bash theuser
@@ -40,9 +41,5 @@ VOLUME /config /logs /source /target
 
 # add env var for tool_name
 ENV TOOL_NAME="qpdf"
-
-# switch to the user
-USER theuser
-WORKDIR /home/theuser
 
 ENTRYPOINT ["/app/entrypoint.sh"]

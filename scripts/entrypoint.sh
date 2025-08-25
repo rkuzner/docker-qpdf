@@ -10,14 +10,23 @@ DEFAULT_TARGET_FOLDER="/target"
 DEFAULT_KEEP_SOURCEFILE="false"
 DEFAULT_MOVE_UNENCRYPTED="true"
 
-if [ -z "${LOG_FOLDER}" ]; then
-	LOG_FOLDER="${DEFAULT_LOG_FOLDER}"
-fi
-set_logFolder ${LOG_FOLDER}
+LOG_FOLDER=${LOG_FOLDER:-"${DEFAULT_LOG_FOLDER}"}
+set_logFolder
 
-log_message " -+*+- -+*+- -+*+- -+*+- "
+log_message " -+*+- -+*+- -+*+- -+*+- -+*+-"
+log_message " -+*+-  Container START  -+*+-"
+log_message " -+*+- -+*+- -+*+- -+*+- -+*+-"
+
+log_message "Preparing theuser..."
+
+PUID=${PUID:-1000}
+PGID=${PGID:-1000}
+
+groupmod -o -g "$PGID" theuser
+usermod -o -u "$PUID" theuser
+
 log_message "Preparing tool-run.conf file..."
-echo "#!/bin/bash" > /home/theuser/tool-run.conf
+touch /home/theuser/tool-run.conf
 
 # evaluate if TOOL_NAME was set on ENV, if so, append to conf file
 if [ -n "${TOOL_NAME}" ]; then
@@ -77,6 +86,8 @@ echo 'MOVE_UNENCRYPTED="'${DEFAULT_MOVE_UNENCRYPTED}'"' >> /home/theuser/tool-ru
 log_message "Append PASSWORDS_FILENAME info to tool-run.conf file"
 echo 'PASSWORDS_FILENAME="'${PASSWORDS_FILENAME}'"' >> /home/theuser/tool-run.conf
 
+chown theuser:theuser /home/theuser/tool-run.conf
+
 log_message "Done preparing tool-run.conf file."
 
 # check if TOOL_SCHEDULE was set on ENV. if so, set crontab schedule with it
@@ -98,7 +109,7 @@ if [ -n "${TOOL_SCHEDULE}" ]; then
 else
   log_message "No TOOL_SCHEDULE environment var Found!"
   log_message "This is a Single run!"
-  exec /home/theuser/tool-run.sh
+  exec sudo -u theuser /home/theuser/tool-run.sh
   exit ${?}
 fi
 

@@ -2,23 +2,24 @@
 
 # import log_message function
 scriptFolder=$( cd "$( dirname "${0}" )" && pwd )
+scriptBaseName=$( basename "${0}" .sh )
 configFileName="${scriptFolder}/${scriptBaseName}.conf"
 if [ -f "${configFileName}" ]; then
 	# shellcheck disable=SC1090
 	source "${configFileName}"
 fi
-source "${scriptFolder}/log-message.sh"
-
+if [ -n "${TOOL_NAME}" ]; then
+	scriptBaseName="${scriptBaseName}-"$( echo ${TOOL_NAME} | tr "[:upper:]" "[:lower:]" )
+fi
 DEFAULT_LOG_FOLDER="/logs"
 DEFAULT_SOURCE_FOLDER="/source"
 DEFAULT_TARGET_FOLDER="/target"
 DEFAULT_KEEP_SOURCEFILE="false"
 DEFAULT_MOVE_UNENCRYPTED="true"
 
-SOURCE_FOLDER=""
-TARGET_FOLDER=""
-KEEP_SOURCEFILE=""
-MOVE_UNENCRYPTED=""
+source "${scriptFolder}/log-message.sh"
+set_logFolder "${LOG_FOLDER:-${DEFAULT_LOG_FOLDER}}"
+set_logFileBaseName "${scriptBaseName}"
 
 if [ -f "${configFileName}" ]; then
 	log_message "Found Config file!"
@@ -26,22 +27,10 @@ else
 	log_message "Config file not found: ${configFileName}, using default values"
 fi
 
-if [ -z "${LOG_FOLDER}" ]; then
-	LOG_FOLDER="${DEFAULT_LOG_FOLDER}"
-fi
-set_logFolder ${LOG_FOLDER}
-if [ -z "${SOURCE_FOLDER}" ]; then
-	SOURCE_FOLDER="${DEFAULT_SOURCE_FOLDER}"
-fi
-if [ -z "${TARGET_FOLDER}" ]; then
-	TARGET_FOLDER="${DEFAULT_TARGET_FOLDER}"
-fi
-if [ -z "${KEEP_SOURCEFILE}" ]; then
-	KEEP_SOURCEFILE="${DEFAULT_KEEP_SOURCEFILE}"
-fi
-if [ -z "${MOVE_UNENCRYPTED}" ]; then
-	MOVE_UNENCRYPTED="${DEFAULT_MOVE_UNENCRYPTED}"
-fi
+SOURCE_FOLDER="${SOURCE_FOLDER:-${DEFAULT_SOURCE_FOLDER}}"
+TARGET_FOLDER="${TARGET_FOLDER:-${DEFAULT_TARGET_FOLDER}}"
+KEEP_SOURCEFILE="${KEEP_SOURCEFILE:-${DEFAULT_KEEP_SOURCEFILE}}"
+MOVE_UNENCRYPTED="${MOVE_UNENCRYPTED:-${DEFAULT_MOVE_UNENCRYPTED}}"
 
 log_message "Checking for passwords file"
 if [ -z "${PASSWORDS_FILENAME}" ]; then

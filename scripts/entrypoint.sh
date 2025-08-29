@@ -2,6 +2,10 @@
 
 # import log_message function
 scriptFolder=$( cd "$( dirname "${0}" )" && pwd )
+scriptBaseName=$( basename "${0}" .sh )
+if [ -n "${TOOL_NAME}" ]; then
+	scriptBaseName="${scriptBaseName}-"$( echo ${TOOL_NAME} | tr "[:upper:]" "[:lower:]" )
+fi
 source "${scriptFolder}/log-message.sh"
 
 toolBaseFileName="tool-run"
@@ -17,6 +21,7 @@ DEFAULT_KEEP_SOURCEFILE="false"
 DEFAULT_MOVE_UNENCRYPTED="true"
 
 set_logFolder "${LOG_FOLDER:-${DEFAULT_LOG_FOLDER}}"
+set_logFileBaseName "${scriptBaseName}"
 
 log_message "-+*+- -+*+- -+*+- -+*+- -+*+-"
 log_message "-+*+-  Container START  -+*+-"

@@ -30,14 +30,9 @@ PGID=${PGID:-1000}
 groupmod -o -g "$PGID" ${userName}
 usermod -o -u "$PUID" ${userName}
 
-log_message "Preparing ${toolConfigFileName} file..."
-touch /${userHomeFolder}/${toolConfigFileName}
-
-# evaluate if TOOL_NAME was set on ENV, if so, append to conf file
+log_message "Evaluating environment variables..."
 if [ -n "${TOOL_NAME}" ]; then
   log_message "Found TOOL_NAME environment var!"
-  log_message "Append TOOL_NAME info to ${toolConfigFileName} file"
-  echo 'TOOL_NAME="'${TOOL_NAME}'"' >> /${userHomeFolder}/${toolConfigFileName}
 fi
 
 # evaluate if SOURCE_FOLDER is valid, if not use default
@@ -47,8 +42,6 @@ if [ ! -d "${SOURCE_FOLDER}" ]; then
   SOURCE_FOLDER="${DEFAULT_SOURCE_FOLDER}"
 fi
 log_message "Using SOURCE_FOLDER: ${SOURCE_FOLDER}"
-log_message "Append SOURCE_FOLDER info to ${toolConfigFileName} file"
-echo 'SOURCE_FOLDER="'${SOURCE_FOLDER}'"' >> /${userHomeFolder}/${toolConfigFileName}
 
 # evaluate if TARGET_FOLDER is valid, if not use default
 TARGET_FOLDER="${TARGET_FOLDER:-${DEFAULT_TARGET_FOLDER}}"
@@ -57,8 +50,6 @@ if [ ! -d "${TARGET_FOLDER}" ]; then
   TARGET_FOLDER="${DEFAULT_TARGET_FOLDER}"
 fi
 log_message "Using TARGET_FOLDER: ${TARGET_FOLDER}"
-log_message "Append TARGET_FOLDER info to ${toolConfigFileName} file"
-echo 'TARGET_FOLDER="'${TARGET_FOLDER}'"' >> /${userHomeFolder}/${toolConfigFileName}
 
 # evaluate if KEEP_SOURCEFILE is valid, if not use default
 KEEP_SOURCEFILE="${KEEP_SOURCEFILE:-${DEFAULT_KEEP_SOURCEFILE}}"
@@ -67,8 +58,6 @@ if [ "${KEEP_SOURCEFILE}" != "false" ] && [ "${KEEP_SOURCEFILE}" != "true" ]; th
   KEEP_SOURCEFILE="${DEFAULT_KEEP_SOURCEFILE}"
 fi
 log_message "Using KEEP_SOURCEFILE: ${KEEP_SOURCEFILE}"
-log_message "Append KEEP_SOURCEFILE to ${toolConfigFileName} file"
-echo 'KEEP_SOURCEFILE="'${KEEP_SOURCEFILE}'"' >> /${userHomeFolder}/${toolConfigFileName}
 
 # evaluate if MOVE_UNENCRYPTED is valid, if not use default
 MOVE_UNENCRYPTED="${MOVE_UNENCRYPTED:-${DEFAULT_MOVE_UNENCRYPTED}}"
@@ -77,6 +66,26 @@ if [ "${MOVE_UNENCRYPTED}" != "false" ] && [ "${MOVE_UNENCRYPTED}" != "true" ]; 
   MOVE_UNENCRYPTED="${DEFAULT_MOVE_UNENCRYPTED}"
 fi
 log_message "Using MOVE_UNENCRYPTED: ${MOVE_UNENCRYPTED}"
+log_message "Done evaluating environment variables."
+
+log_message "Preparing ${toolConfigFileName} file..."
+touch /${userHomeFolder}/${toolConfigFileName}
+
+# evaluate if TOOL_NAME was set on ENV, if so, append to conf file
+if [ -n "${TOOL_NAME}" ]; then
+  log_message "Append TOOL_NAME info to ${toolConfigFileName} file"
+  echo 'TOOL_NAME="'${TOOL_NAME}'"' >> /${userHomeFolder}/${toolConfigFileName}
+fi
+
+log_message "Append SOURCE_FOLDER info to ${toolConfigFileName} file"
+echo 'SOURCE_FOLDER="'${SOURCE_FOLDER}'"' >> /${userHomeFolder}/${toolConfigFileName}
+
+log_message "Append TARGET_FOLDER info to ${toolConfigFileName} file"
+echo 'TARGET_FOLDER="'${TARGET_FOLDER}'"' >> /${userHomeFolder}/${toolConfigFileName}
+
+log_message "Append KEEP_SOURCEFILE to ${toolConfigFileName} file"
+echo 'KEEP_SOURCEFILE="'${KEEP_SOURCEFILE}'"' >> /${userHomeFolder}/${toolConfigFileName}
+
 log_message "Append MOVE_UNENCRYPTED to ${toolConfigFileName} file"
 echo 'MOVE_UNENCRYPTED="'${MOVE_UNENCRYPTED}'"' >> /${userHomeFolder}/${toolConfigFileName}
 
@@ -91,12 +100,20 @@ if [ -n "${TOOL_SCHEDULE}" ]; then
   log_message "Found TOOL_SCHEDULE environment var!"
 
   log_message "Clear crontab schedule"
-  crontab -u ${userName} -r 2>/dev/null | tee -a "${logFile}"
+  crontab -u ${userName} -r 2>/dev/null
+  exitCode=${?}
+  if [ ${exitCode} -gt 0 ] ; then
+    log_message "There was a problem clearing crontab schedule, exitCode was: ${exitCode}"
+  fi
 
   log_message "Set crontab schedule"
   echo "${TOOL_SCHEDULE} /${userHomeFolder}/${toolScriptFileName}" | crontab -u ${userName} -
+  exitCode=${?}
+  if [ ${exitCode} -gt 0 ] ; then
+    log_message "There was a problem setting crontab schedule, exitCode was: ${exitCode}"
+  fi
 
-  log_message "restart cron service"
+  log_message "Restart cron service"
   service cron restart
   exitCode=${?}
   if [ ${exitCode} -gt 0 ] ; then

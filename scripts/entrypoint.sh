@@ -16,9 +16,7 @@ DEFAULT_TARGET_FOLDER="/target"
 DEFAULT_KEEP_SOURCEFILE="false"
 DEFAULT_MOVE_UNENCRYPTED="true"
 
-echo "entrypoint: LOG_FOLDER:${LOG_FOLDER}"
-LOG_FOLDER="${LOG_FOLDER:-${DEFAULT_LOG_FOLDER}}"
-set_logFolder
+set_logFolder "${LOG_FOLDER:-${DEFAULT_LOG_FOLDER}}"
 
 log_message "-+*+- -+*+- -+*+- -+*+- -+*+-"
 log_message "-+*+-  Container START  -+*+-"

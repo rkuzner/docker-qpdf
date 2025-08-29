@@ -54,7 +54,7 @@ fi
 log_message "Found ${passwordCount} Passwords in file!"
 
 log_message "Checking for source files"
-folderContents=$( ls -1 ${SOURCE_FOLDER} )
+folderContents=$( ls -1 "${SOURCE_FOLDER}" )
 if [ -z "${folderContents}" ]; then
 	log_message "No files found on source folder."
 	log_message "Nothing to do!"

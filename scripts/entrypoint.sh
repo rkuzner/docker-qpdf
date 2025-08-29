@@ -4,6 +4,12 @@
 scriptFolder=$( cd "$( dirname "${0}" )" && pwd )
 source "${scriptFolder}/log-message.sh"
 
+toolBaseFileName="tool-run"
+toolScriptFileName="${toolBaseFileName}.sh"
+toolConfigFileName="${toolBaseFileName}.conf"
+userName="theuser"
+userHomeFolder="home/${userName}"
+
 DEFAULT_LOG_FOLDER="/logs"
 DEFAULT_SOURCE_FOLDER="/source"
 DEFAULT_TARGET_FOLDER="/target"
@@ -17,88 +23,79 @@ log_message " -+*+- -+*+- -+*+- -+*+- -+*+-"
 log_message " -+*+-  Container START  -+*+-"
 log_message " -+*+- -+*+- -+*+- -+*+- -+*+-"
 
-log_message "Preparing theuser..."
+log_message "Preparing user: ${userName}..."
 
 PUID=${PUID:-1000}
 PGID=${PGID:-1000}
 
-groupmod -o -g "$PGID" theuser
-usermod -o -u "$PUID" theuser
+groupmod -o -g "$PGID" ${userName}
+usermod -o -u "$PUID" ${userName}
 
-log_message "Preparing tool-run.conf file..."
-touch /home/theuser/tool-run.conf
+log_message "Preparing ${toolConfigFileName} file..."
+touch /${userHomeFolder}/${toolConfigFileName}
 
 # evaluate if TOOL_NAME was set on ENV, if so, append to conf file
 if [ -n "${TOOL_NAME}" ]; then
   log_message "Found TOOL_NAME environment var!"
-  log_message "Append TOOL_NAME info to tool-run.conf file"
-  echo 'TOOL_NAME="'${TOOL_NAME}'"' >> /home/theuser/tool-run.conf
+  log_message "Append TOOL_NAME info to ${toolConfigFileName} file"
+  echo 'TOOL_NAME="'${TOOL_NAME}'"' >> /${userHomeFolder}/${toolConfigFileName}
 fi
 
-# evaluate if SOURCE_FOLDER was set on ENV, if so, only use if valid
-if [ -n "${SOURCE_FOLDER}" ]; then
-  log_message "Found SOURCE_FOLDER environment var!"
-  if [ -d "${SOURCE_FOLDER}" ]; then
-    log_message "Valid SOURCE_FOLDER environment var: ${SOURCE_FOLDER}"
-    DEFAULT_SOURCE_FOLDER="${SOURCE_FOLDER}"
-  fi
+# evaluate if SOURCE_FOLDER is valid, if not use default
+SOURCE_FOLDER=${SOURCE_FOLDER:-"${DEFAULT_SOURCE_FOLDER}"}
+if [ ! -d "${SOURCE_FOLDER}" ]; then
+  log_message "Invalid SOURCE_FOLDER: ${SOURCE_FOLDER}"
+  SOURCE_FOLDER="${DEFAULT_SOURCE_FOLDER}"
 fi
-log_message "Using SOURCE_FOLDER: ${DEFAULT_SOURCE_FOLDER}"
-log_message "Append SOURCE_FOLDER info to tool-run.conf file"
-echo 'SOURCE_FOLDER="'${SOURCE_FOLDER}'"' >> /home/theuser/tool-run.conf
+log_message "Using SOURCE_FOLDER: ${SOURCE_FOLDER}"
+log_message "Append SOURCE_FOLDER info to ${toolConfigFileName} file"
+echo 'SOURCE_FOLDER="'${SOURCE_FOLDER}'"' >> /${userHomeFolder}/${toolConfigFileName}
 
-# evaluate if TARGET_FOLDER was set on ENV, if so, only use if valid
-if [ -n "${TARGET_FOLDER}" ]; then
-  log_message "Found TARGET_FOLDER environment var!"
-  if [ -d "${TARGET_FOLDER}" ]; then
-    log_message "Valid TARGET_FOLDER environment var: ${TARGET_FOLDER}"
-    DEFAULT_TARGET_FOLDER="${TARGET_FOLDER}"
-  fi
+# evaluate if TARGET_FOLDER is valid, if not use default
+TARGET_FOLDER=${TARGET_FOLDER:-"${DEFAULT_TARGET_FOLDER}"}
+if [ ! -d "${TARGET_FOLDER}" ]; then
+  log_message "Invalid TARGET_FOLDER: ${TARGET_FOLDER}"
+  TARGET_FOLDER="${DEFAULT_TARGET_FOLDER}"
 fi
-log_message "Using TARGET_FOLDER: ${DEFAULT_TARGET_FOLDER}"
-log_message "Append TARGET_FOLDER info to tool-run.conf file"
-echo 'TARGET_FOLDER="'${TARGET_FOLDER}'"' >> /home/theuser/tool-run.conf
+log_message "Using TARGET_FOLDER: ${TARGET_FOLDER}"
+log_message "Append TARGET_FOLDER info to ${toolConfigFileName} file"
+echo 'TARGET_FOLDER="'${TARGET_FOLDER}'"' >> /${userHomeFolder}/${toolConfigFileName}
 
-# evaluate if KEEP_SOURCEFILE was set on ENV, if so, only use if valid
-if [ -n "${KEEP_SOURCEFILE}" ]; then
-  log_message "Found KEEP_SOURCEFILE environment var!"
-  if [ "${KEEP_SOURCEFILE}" = "false" ] || [ "${KEEP_SOURCEFILE}" = "true" ]; then
-    DEFAULT_KEEP_SOURCEFILE="${KEEP_SOURCEFILE}"
-    log_message "Valid KEEP_SOURCEFILE environment var: ${KEEP_SOURCEFILE}"
-  fi
+# evaluate if KEEP_SOURCEFILE is valid, if not use default
+KEEP_SOURCEFILE=${KEEP_SOURCEFILE:-"${DEFAULT_KEEP_SOURCEFILE}"}
+if [ "${KEEP_SOURCEFILE}" != "false" ] && [ "${KEEP_SOURCEFILE}" != "true" ]; then
+  log_message "Invalid KEEP_SOURCEFILE: ${KEEP_SOURCEFILE}"
+  KEEP_SOURCEFILE="${DEFAULT_KEEP_SOURCEFILE}"
 fi
-log_message "Using KEEP_SOURCEFILE: ${DEFAULT_KEEP_SOURCEFILE}"
-log_message "Append KEEP_SOURCEFILE to tool-run.conf file"
-echo 'KEEP_SOURCEFILE="'${DEFAULT_KEEP_SOURCEFILE}'"' >> /home/theuser/tool-run.conf
+log_message "Using KEEP_SOURCEFILE: ${KEEP_SOURCEFILE}"
+log_message "Append KEEP_SOURCEFILE to ${toolConfigFileName} file"
+echo 'KEEP_SOURCEFILE="'${KEEP_SOURCEFILE}'"' >> /${userHomeFolder}/${toolConfigFileName}
 
-# evaluate if KEEP_SOURCEFILE was set on ENV, if so, only use if valid
-if [ -n "${MOVE_UNENCRYPTED}" ]; then
-  log_message "Found MOVE_UNENCRYPTED environment var!"
-  if [ "${MOVE_UNENCRYPTED}" = "false" ] || [ "${MOVE_UNENCRYPTED}" = "true" ]; then
-    DEFAULT_MOVE_UNENCRYPTED="${MOVE_UNENCRYPTED}"
-    log_message "Valid MOVE_UNENCRYPTED environment var: ${MOVE_UNENCRYPTED}"
-  fi
+# evaluate if MOVE_UNENCRYPTED is valid, if not use default
+MOVE_UNENCRYPTED=${MOVE_UNENCRYPTED:-"${DEFAULT_MOVE_UNENCRYPTED}"}
+if [ "${MOVE_UNENCRYPTED}" != "false" ] && [ "${MOVE_UNENCRYPTED}" != "true" ]; then
+  log_message "Invalid MOVE_UNENCRYPTED: ${MOVE_UNENCRYPTED}"
+  MOVE_UNENCRYPTED="${DEFAULT_MOVE_UNENCRYPTED}"
 fi
-log_message "Using MOVE_UNENCRYPTED: ${DEFAULT_MOVE_UNENCRYPTED}"
-log_message "Append MOVE_UNENCRYPTED to tool-run.conf file"
-echo 'MOVE_UNENCRYPTED="'${DEFAULT_MOVE_UNENCRYPTED}'"' >> /home/theuser/tool-run.conf
+log_message "Using MOVE_UNENCRYPTED: ${MOVE_UNENCRYPTED}"
+log_message "Append MOVE_UNENCRYPTED to ${toolConfigFileName} file"
+echo 'MOVE_UNENCRYPTED="'${MOVE_UNENCRYPTED}'"' >> /${userHomeFolder}/${toolConfigFileName}
 
-log_message "Append PASSWORDS_FILENAME info to tool-run.conf file"
-echo 'PASSWORDS_FILENAME="'${PASSWORDS_FILENAME}'"' >> /home/theuser/tool-run.conf
+log_message "Append PASSWORDS_FILENAME info to ${toolConfigFileName} file"
+echo 'PASSWORDS_FILENAME="'${PASSWORDS_FILENAME}'"' >> /${userHomeFolder}/${toolConfigFileName}
 
-chown theuser:theuser /home/theuser/tool-run.conf
-
-log_message "Done preparing tool-run.conf file."
+chown ${userName}:${userName} /${userHomeFolder}/${toolConfigFileName}
+log_message "Done preparing ${toolConfigFileName} file."
 
 # check if TOOL_SCHEDULE was set on ENV. if so, set crontab schedule with it
 if [ -n "${TOOL_SCHEDULE}" ]; then
   log_message "Found TOOL_SCHEDULE environment var!"
 
   log_message "Clear crontab schedule"
-  crontab -u theuser -r 2>/dev/null | tee -a "${logFile}"
+  crontab -u ${userName} -r 2>/dev/null | tee -a "${logFile}"
 
   log_message "Set crontab schedule"
-  echo "${TOOL_SCHEDULE} /home/theuser/tool-run.sh" | crontab -u theuser -
+  echo "${TOOL_SCHEDULE} /${userHomeFolder}/${toolScriptFileName}" | crontab -u ${userName} -
 
   log_message "restart cron service"
   service cron restart
@@ -109,7 +106,7 @@ if [ -n "${TOOL_SCHEDULE}" ]; then
 else
   log_message "No TOOL_SCHEDULE environment var Found!"
   log_message "This is a Single run!"
-  exec sudo -u theuser /home/theuser/tool-run.sh
+  exec sudo -u ${userName} /${userHomeFolder}/${toolScriptFileName}
   exit ${?}
 fi
 

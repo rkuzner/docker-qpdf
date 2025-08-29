@@ -16,12 +16,13 @@ DEFAULT_TARGET_FOLDER="/target"
 DEFAULT_KEEP_SOURCEFILE="false"
 DEFAULT_MOVE_UNENCRYPTED="true"
 
-LOG_FOLDER=${LOG_FOLDER:-"${DEFAULT_LOG_FOLDER}"}
+echo "entrypoint: LOG_FOLDER:${LOG_FOLDER}"
+LOG_FOLDER="${LOG_FOLDER:-${DEFAULT_LOG_FOLDER}}"
 set_logFolder
 
-log_message " -+*+- -+*+- -+*+- -+*+- -+*+-"
-log_message " -+*+-  Container START  -+*+-"
-log_message " -+*+- -+*+- -+*+- -+*+- -+*+-"
+log_message "-+*+- -+*+- -+*+- -+*+- -+*+-"
+log_message "-+*+-  Container START  -+*+-"
+log_message "-+*+- -+*+- -+*+- -+*+- -+*+-"
 
 log_message "Preparing user: ${userName}..."
 
@@ -42,7 +43,7 @@ if [ -n "${TOOL_NAME}" ]; then
 fi
 
 # evaluate if SOURCE_FOLDER is valid, if not use default
-SOURCE_FOLDER=${SOURCE_FOLDER:-"${DEFAULT_SOURCE_FOLDER}"}
+SOURCE_FOLDER="${SOURCE_FOLDER:-${DEFAULT_SOURCE_FOLDER}}"
 if [ ! -d "${SOURCE_FOLDER}" ]; then
   log_message "Invalid SOURCE_FOLDER: ${SOURCE_FOLDER}"
   SOURCE_FOLDER="${DEFAULT_SOURCE_FOLDER}"
@@ -52,7 +53,7 @@ log_message "Append SOURCE_FOLDER info to ${toolConfigFileName} file"
 echo 'SOURCE_FOLDER="'${SOURCE_FOLDER}'"' >> /${userHomeFolder}/${toolConfigFileName}
 
 # evaluate if TARGET_FOLDER is valid, if not use default
-TARGET_FOLDER=${TARGET_FOLDER:-"${DEFAULT_TARGET_FOLDER}"}
+TARGET_FOLDER="${TARGET_FOLDER:-${DEFAULT_TARGET_FOLDER}}"
 if [ ! -d "${TARGET_FOLDER}" ]; then
   log_message "Invalid TARGET_FOLDER: ${TARGET_FOLDER}"
   TARGET_FOLDER="${DEFAULT_TARGET_FOLDER}"
@@ -62,7 +63,7 @@ log_message "Append TARGET_FOLDER info to ${toolConfigFileName} file"
 echo 'TARGET_FOLDER="'${TARGET_FOLDER}'"' >> /${userHomeFolder}/${toolConfigFileName}
 
 # evaluate if KEEP_SOURCEFILE is valid, if not use default
-KEEP_SOURCEFILE=${KEEP_SOURCEFILE:-"${DEFAULT_KEEP_SOURCEFILE}"}
+KEEP_SOURCEFILE="${KEEP_SOURCEFILE:-${DEFAULT_KEEP_SOURCEFILE}}"
 if [ "${KEEP_SOURCEFILE}" != "false" ] && [ "${KEEP_SOURCEFILE}" != "true" ]; then
   log_message "Invalid KEEP_SOURCEFILE: ${KEEP_SOURCEFILE}"
   KEEP_SOURCEFILE="${DEFAULT_KEEP_SOURCEFILE}"
@@ -72,7 +73,7 @@ log_message "Append KEEP_SOURCEFILE to ${toolConfigFileName} file"
 echo 'KEEP_SOURCEFILE="'${KEEP_SOURCEFILE}'"' >> /${userHomeFolder}/${toolConfigFileName}
 
 # evaluate if MOVE_UNENCRYPTED is valid, if not use default
-MOVE_UNENCRYPTED=${MOVE_UNENCRYPTED:-"${DEFAULT_MOVE_UNENCRYPTED}"}
+MOVE_UNENCRYPTED="${MOVE_UNENCRYPTED:-${DEFAULT_MOVE_UNENCRYPTED}}"
 if [ "${MOVE_UNENCRYPTED}" != "false" ] && [ "${MOVE_UNENCRYPTED}" != "true" ]; then
   log_message "Invalid MOVE_UNENCRYPTED: ${MOVE_UNENCRYPTED}"
   MOVE_UNENCRYPTED="${DEFAULT_MOVE_UNENCRYPTED}"

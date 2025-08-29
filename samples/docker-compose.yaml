@@ -1,0 +1,25 @@
+name: qpdf-tool
+services:
+  app:
+    image: rkuzner/docker-qpdf:latest
+    container_name: docker-qpdf1
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+    cpu_shares: 10
+    network_mode: bridge
+    volumes:
+      - /path/to/docker/config/qpdf-tool:/config:ro
+      - /path/to/docker/config/qpdf-tool/logs:/logs
+      - ~/Downloads:/source
+      - ~/Downloads:/target
+    environment:
+      SOURCE_FOLDER: "/source/2decrypt"
+      TARGET_FOLDER: "/target/decrypted"
+      KEEP_SOURCEFILE: "false"
+      MOVE_UNENCRYPTED: "true"
+      PASSWORDS_FILENAME: "/config/passwords.csv"
+      TOOL_SCHEDULE: "0 2 * * *"
+    restart: unless-stopped
+    tty: true

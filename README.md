@@ -15,7 +15,14 @@ The image works (and uses) the following paths actively:
 - source: (base) directory containing PDF files that you want to try to decrypt
 - target: (base) directory for move the PDF files that were decrypted successfully
 
-`source` & `target` volumes are *required* mappings, keep in mind carefuly referencing them on the organize-tool config files.
+`source`, `target` & `processed` volumes are *required* mappings.
+
+## How it works
+
+On each run, the tool will search files on the `source` folder (non-recursively and will ignore folders).
+If it finds files, then will try to decrypt each file and place the resulting PDF on the `target` folder.
+Each file on the `target` folder will receive matching timestamps from its respective `source` file.
+Successfully decrypted files will be deleted or moved to the `processed` folder.
 
 ## Run Examples
 
@@ -27,6 +34,9 @@ docker run -it --name docker-qpdf
  -v "/path/to/logs/":/logs
  -v "/source-folder/":/source
  -v "/target-folder/":/target
+ -v "/processed-folder/":/processed
+ -e PUID=12345
+ -e GUID=67890
  -e PASSWORDS_FILENAME=/config/passwords.csv
  docker-qpdf
 ```
@@ -39,6 +49,9 @@ docker run -it --name docker-qpdf
  -v "/path/to/logs/":/logs
  -v "/source-folder/":/source
  -v "/target-folder/":/target
+ -v "/processed-folder/":/processed
+ -e PUID=12345
+ -e GUID=67890
  -e PASSWORDS_FILENAME=/config/passwords.csv
  -e KEEP_SOURCEFILE=true
  docker-qpdf
@@ -52,9 +65,13 @@ docker run -it --name docker-qpdf
  -v "/path/to/logs/":/logs
  -v "/some/base/folder/":/source
  -v "/some/base/folder/":/target
+ -v "/some/base/folder/":/processed
+ -e PUID=12345
+ -e GUID=67890
  -e PASSWORDS_FILENAME=/config/passwords.csv
  -e SOURCE_FOLDER=/source/2decrypt
  -e TARGET_FOLDER=/target/decrypted
+ -e PROCESSED_FOLDER=/processed/2decrypt/processed
  -e MOVE_UNENCRYPTED=false
  docker-qpdf
 ```

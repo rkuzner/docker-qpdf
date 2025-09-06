@@ -3,6 +3,7 @@ services:
   app:
     image: rkuzner/docker-qpdf:latest
     container_name: docker-qpdf1
+    hostname: docker-qpdf1
     deploy:
       resources:
         limits:
@@ -12,11 +13,11 @@ services:
     volumes:
       - /path/to/docker/config/qpdf-tool:/config:ro
       - /path/to/docker/config/qpdf-tool/logs:/logs
-      - ~/Downloads:/source
+      - ~/Downloads/2decrypt:/source
       - ~/Downloads:/target
+      - ~/Downloads/2decrypt/processed:/processed
     environment:
-      SOURCE_FOLDER: "/source/2decrypt"
-      TARGET_FOLDER: "/target/decrypted"
+      PUID: "12345"
       KEEP_SOURCEFILE: "false"
       MOVE_UNENCRYPTED: "true"
       PASSWORDS_FILENAME: "/config/passwords.csv"

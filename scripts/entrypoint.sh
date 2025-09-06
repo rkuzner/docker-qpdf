@@ -17,6 +17,7 @@ userHomeFolder="home/${userName}"
 DEFAULT_LOG_FOLDER="/logs"
 DEFAULT_SOURCE_FOLDER="/source"
 DEFAULT_TARGET_FOLDER="/target"
+DEFAULT_PROCESSED_FOLDER="/processed"
 DEFAULT_KEEP_SOURCEFILE="false"
 DEFAULT_MOVE_UNENCRYPTED="true"
 
@@ -56,6 +57,14 @@ if [ ! -d "${TARGET_FOLDER}" ]; then
 fi
 log_message "Using TARGET_FOLDER: ${TARGET_FOLDER}"
 
+# evaluate if PROCESSED_FOLDER is valid, if not use default
+PROCESSED_FOLDER="${PROCESSED_FOLDER:-${DEFAULT_PROCESSED_FOLDER}}"
+if [ ! -d "${PROCESSED_FOLDER}" ]; then
+  log_message "Invalid TARGET_FOLDER: ${PROCESSED_FOLDER}"
+  PROCESSED_FOLDER="${DEFAULT_PROCESSED_FOLDER}"
+fi
+log_message "Using PROCESSED_FOLDER: ${PROCESSED_FOLDER}"
+
 # evaluate if KEEP_SOURCEFILE is valid, if not use default
 KEEP_SOURCEFILE="${KEEP_SOURCEFILE:-${DEFAULT_KEEP_SOURCEFILE}}"
 if [ "${KEEP_SOURCEFILE}" != "false" ] && [ "${KEEP_SOURCEFILE}" != "true" ]; then
@@ -87,6 +96,9 @@ echo 'SOURCE_FOLDER="'${SOURCE_FOLDER}'"' >> /${userHomeFolder}/${toolConfigFile
 
 log_message "Append TARGET_FOLDER info to ${toolConfigFileName} file"
 echo 'TARGET_FOLDER="'${TARGET_FOLDER}'"' >> /${userHomeFolder}/${toolConfigFileName}
+
+log_message "Append PROCESSED_FOLDER info to ${toolConfigFileName} file"
+echo 'PROCESSED_FOLDER="'${PROCESSED_FOLDER}'"' >> /${userHomeFolder}/${toolConfigFileName}
 
 log_message "Append KEEP_SOURCEFILE to ${toolConfigFileName} file"
 echo 'KEEP_SOURCEFILE="'${KEEP_SOURCEFILE}'"' >> /${userHomeFolder}/${toolConfigFileName}

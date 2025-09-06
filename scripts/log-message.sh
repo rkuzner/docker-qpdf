@@ -5,6 +5,8 @@ defaultLogFolder=$( cd "$( dirname "${0}" )" && pwd )
 logFileBaseName="${logFileBaseName:-${defaultLogFileBaseName}}"
 logFolder="${logFolder}:-${defaultLogFolder}"
 
+COLUMNS=180
+
 function set_logFileBaseName() {
 	local fileBaseName="${1}"
 	if [ -z "${fileBaseName}" ]; then
@@ -29,6 +31,10 @@ function set_logFolder() {
 	echo "set_logFolder(): logFolder will be ${logFolder}"
 }
 
+function get_logFileName() {
+	echo "${logFolder}/${logFileBaseName}-$( date +%F ).log"
+}
+
 # logs a message to console AND to logFileBaseName (if available)
 function log_message() {
 	local message2log="${*}"
@@ -43,4 +49,15 @@ function log_message() {
 		# we have NO target logFile!
 		echo "${timeStamp} | ${message2log}"
 	fi
+}
+
+# logs a message to console AND to logFileBaseName (if available) THEN exits with provided code
+function log_message_and_exit() {
+	if [ ${#} -le 2 ]; then
+		log_message "${*}"
+	fi
+	local exitCode=$( expr "${1}" + 0 ); shift
+	local message2log="${*}"
+	log_message "${message2log}"
+	exit ${exitCode}
 }

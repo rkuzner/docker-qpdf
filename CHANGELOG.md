@@ -27,14 +27,23 @@ The format is based on [Keep a Changelog][web_changelog], and this project adher
 
 > Please list here the soon-to-be-released features
 
+## 0.1.2 - 2025-09-05
+
+![img_add]
+
+- hability to keep source files on processed folder
+- minor optimizations on logging
+- folder permission evaluation
+
 ## 0.1.1 - 2025-08-29
 
 ![img_add]
 
+- allow passing specifit user & group ids via `PUID` & `PGID` env vars
 - encapsulate tool into unpriviledged user
 - allow crontab schedule via env vars
 - encapsulate tool run in single script to be used by crontab and single runs consistently
-- sample `env-vars.conf` & `passwords.csv` files
+- sample `passwords.csv`, `env-vars.conf` & `docker-compose.yaml` files
 - docker image & manifest build script
 
 ## 0.1.0 - 2025-08-10

@@ -102,68 +102,98 @@ for individualFile in ${folderContents}; do
 
 	if [ -d "${SOURCE_FOLDER}/${individualFile}" ]; then
 		log_message "Found a directory! Ignoring: ${individualFile}"
+		continue
 	fi
-	if [ ! -d "${SOURCE_FOLDER}/${individualFile}" ]; then
-		# check if file is encrypted
-		qpdf --is-encrypted "${SOURCE_FOLDER}/${individualFile}" 2>&1 | tee -a "$( get_logFileName )"
-		#qpdf @${paramFileName}
-		isEncryptedResult=${?}
-		if [ ${isEncryptedResult} -eq 2 ]; then
-			log_message "File is NOT encrypted: ${individualFile}"
-			# if decrypt successful , remove original (if aplicable)
-			if [ "${MOVE_UNENCRYPTED}" == "true" ] ; then
-				log_message "Moving to target folder..."
-				mv "${SOURCE_FOLDER}/${individualFile}" "${TARGET_FOLDER}"
-			fi
-		elif [ ${isEncryptedResult} -eq  1 ]; then
+	# individualFile is a File (notFolder)!
+
+	# check if file is encrypted
+	qpdf --is-encrypted "${SOURCE_FOLDER}/${individualFile}" 2>&1 | tee -a "$( get_logFileName )"
+	isEncryptedResult=${?}
+	if [ ${isEncryptedResult} -eq 2 ]; then
+		log_message "File is NOT encrypted: ${individualFile}"
+		# if decrypt successful , remove original (if aplicable)
+		if [ "${MOVE_UNENCRYPTED}" == "true" ] ; then
+			log_message "Moving to target folder..."
+			mv "${SOURCE_FOLDER}/${individualFile}" "${TARGET_FOLDER}"
+		fi
+		continue
+	fi
+
+	if [ ${isEncryptedResult} -eq  1 ]; then
+		# Should not happen, because of unused error Code
+		log_message "Unused Error Code!"
+		continue
+	fi
+
+	if [ ${isEncryptedResult} -ne 0 ]; then
+		# Should not happen, because of unknown error Code
+		log_message "Unknown Error Code! (isEncryptedResult: ${isEncryptedResult})"
+	fi # evaluate isEncryptedResult
+
+	# if we reach this point, we can safely say that ${isEncryptedResult} -eq 0, thus:
+	log_message "File IS encrypted: ${individualFile}"
+
+	log_message "Trying Passwords on file..."
+	#log_message "DEBUG: passwordList: ${passwordList}"
+	for individualPassword in ${passwordList}; do
+		# check if the file still exists, maybe it was decrypted with previous password?
+		if [ ! -f "${SOURCE_FOLDER}/${individualFile}" ]; then
+			continue
+		fi # file exists?
+
+		#log_message "DEBUG: individualPassword: ${individualPassword}"
+		qpdf --requires-password --password=${individualPassword} "${SOURCE_FOLDER}/${individualFile}" 2>&1 | tee -a "$( get_logFileName )"
+		requirePasswordResult=${?}
+		if [ ${requirePasswordResult} -eq 0 ]; then
+			log_message "Password Mismatch!"
+			continue
+		if
+		if [ ${requirePasswordResult} -eq 1 ]; then
 			# Should not happen, because of unused error Code
 			log_message "Unused Error Code!"
-		elif [ ${isEncryptedResult} -eq 0 ]; then
-			log_message "File IS encrypted: ${individualFile}"
+			continue
+		fi
+		if [ ${requirePasswordResult} -eq 2 ]; then
+			# Should not happen, because of previous validations
+			log_message "File is NOT encrypted!"
+			continue
+		fi
+		if [ ${requirePasswordResult} -ne 3 ]; then
+			# Should not happen, because of previous validations
+			log_message "Unknown Error Code! (requirePasswordResult: ${requirePasswordResult})"
+			continue
+		fi # evaluate requirePasswordResult
 
-			log_message "Trying Passwords on file..."
-			#log_message "DEBUG: passwordList: ${passwordList}"
-			for individualPassword in ${passwordList}; do
-				if [ -f "${SOURCE_FOLDER}/${individualFile}" ]; then
-					#log_message "DEBUG: individualPassword: ${individualPassword}"
-					qpdf --requires-password --password=${individualPassword} "${SOURCE_FOLDER}/${individualFile}" 2>&1 | tee -a "$( get_logFileName )"
-					requirePasswordResult=${?}
-					if [ ${requirePasswordResult} -eq 0 ]; then
-						# Should not happen, because of previous validations
-						log_message "Password Mismatch!"
-					elif [ ${requirePasswordResult} -eq 1 ]; then
-						# Should not happen, because of unused error Code
-						log_message "Unused Error Code!"
-					elif [ ${requirePasswordResult} -eq 2 ]; then
-						# Should not happen, because of previous validations
-						log_message "File is NOT encrypted!"
-					elif [ ${requirePasswordResult} -eq 3 ]; then
-						log_message "Found password Match with file!"
+		# if we reach this point, we can safely say that ${requirePasswordResult} -eq 3, thus:
+		log_message "Found password Match with file!"
 
-						qpdf --decrypt --password=${individualPassword} "${SOURCE_FOLDER}/${individualFile}" "${TARGET_FOLDER}/${individualFile}" 2>&1 | tee -a "$( get_logFileName )"
-						decryptResult=${?}
-						if [ ${decryptResult} -eq 0 ]; then
-							# should match target's timestamps with source's timestamps
-							log_message "Updating target's timestamps..."
-							touch -r "${SOURCE_FOLDER}/${individualFile}" "${TARGET_FOLDER}/${individualFile}"
+		qpdf --decrypt --password=${individualPassword} "${SOURCE_FOLDER}/${individualFile}" "${TARGET_FOLDER}/${individualFile}" 2>&1 | tee -a "$( get_logFileName )"
+		decryptResult=${?}
+		if [ ${decryptResult} -ne 0 ]; then
+			log_message "Could not decrypt file! (qpdf errCode: ${decryptResult})"
+			continue
+		fi
 
-							# if decrypt successful , remove original (if aplicable)
-							if [ "${KEEP_SOURCEFILE}" == "true" ] ; then
-								log_message "Moving source file to processed folder..."
-								mv -n "${SOURCE_FOLDER}/${individualFile}" "${PROCESSED_FOLDER}"
-							fi
-							if [ "${KEEP_SOURCEFILE}" == "false" ] ; then
-								log_message "Removing source file..."
-								rm -f "${SOURCE_FOLDER}/${individualFile}"
-							fi
-						else
-							log_message "Could not decrypt file! (qpdf errCode: ${decryptResult})"
-						fi
-					fi # evaluate requirePasswordResult
-				fi # file exists? or was decrypted with previous password?
-			done
-		fi # evaluate isEncryptedResult
-	fi # evaluate isFile (notFolder)
+		# target file was created?
+		if [ ! -f "${TARGET_FOLDER}/${individualFile}" ]; then
+			log_message "Decrypted target file missing! (maybe a subprocess error?)"
+			continue
+		fi # target file was created?
+
+		# should match target's timestamps with source's timestamps
+		log_message "Updating target's timestamps..."
+		touch -r "${SOURCE_FOLDER}/${individualFile}" "${TARGET_FOLDER}/${individualFile}"
+
+		# if decrypt successful, remove original (if aplicable)
+		if [ "${KEEP_SOURCEFILE}" == "true" ] ; then
+			log_message "Moving source file to processed folder..."
+			mv -n "${SOURCE_FOLDER}/${individualFile}" "${PROCESSED_FOLDER}"
+		fi
+		if [ "${KEEP_SOURCEFILE}" == "false" ] ; then
+			log_message "Removing source file..."
+			rm -f "${SOURCE_FOLDER}/${individualFile}"
+		fi
+	done
 done
 # restore originalIFS
 IFS="${originalIFS}"

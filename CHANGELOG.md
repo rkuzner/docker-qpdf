@@ -27,6 +27,13 @@ The format is based on [Keep a Changelog][web_changelog], and this project adher
 
 > Please list here the soon-to-be-released features
 
+## 0.1.3 - 2025-09-09
+
+![img_upd]
+
+- improve tool-run script readability avoiding nested conditions and applying fail-fast pattern
+- avoid potential problems with file or folder names containg spaces when logging
+
 ## 0.1.2 - 2025-09-05
 
 ![img_add]

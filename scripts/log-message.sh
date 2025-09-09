@@ -8,7 +8,7 @@ logFolder="${logFolder}:-${defaultLogFolder}"
 COLUMNS=180
 
 function set_logFileBaseName() {
-	local fileBaseName="${1}"
+	local fileBaseName="${*}"
 	if [ -z "${fileBaseName}" ]; then
 		echo "set_logFileBaseName(): must provide a fileBaseName as parameter"
 		return
@@ -18,7 +18,7 @@ function set_logFileBaseName() {
 }
 
 function set_logFolder() {
-	local folderName="${1}"
+	local folderName="${*}"
 	if [ -z "${folderName}" ]; then
 		echo "set_logFolder(): must provide a folderName as parameter"
 		return
@@ -53,9 +53,6 @@ function log_message() {
 
 # logs a message to console AND to logFileBaseName (if available) THEN exits with provided code
 function log_message_and_exit() {
-	if [ ${#} -le 2 ]; then
-		log_message "${*}"
-	fi
 	local exitCode=$( expr "${1}" + 0 ); shift
 	local message2log="${*}"
 	log_message "${message2log}"

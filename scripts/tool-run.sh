@@ -22,6 +22,10 @@ source "${scriptFolder}/log-message.sh"
 set_logFolder "${LOG_FOLDER:-${DEFAULT_LOG_FOLDER}}"
 set_logFileBaseName "${scriptBaseName}"
 
+log_message "-+*+- -+*+- -+*+- -+*+- -+*+-"
+log_message "-+*+-  Tool-Run  START  -+*+-"
+log_message "-+*+- -+*+- -+*+- -+*+- -+*+-"
+
 if [ -f "${configFileName}" ]; then
 	log_message "Found Config file!"
 else
@@ -93,15 +97,14 @@ passwordList=$( grep -e plain "${PASSWORDS_FILENAME}" | cut -f2 -d"," )
 passwordList="${passwordList}"$'\n'$( grep -e base64 "${PASSWORDS_FILENAME}" | cut -f2 -d"," | base64 --decode )
 
 log_message "Iterating source files: ${SOURCE_FOLDER}"
-#log_message "DEBUG: folderContents: ${folderContents}"
 # must be able to iterate on filenames that have spaces on them
 originalIFS="${IFS}"
 IFS=$'\n'
 for individualFile in ${folderContents}; do
-	#log_message "DEBUG: individualFile: ${SOURCE_FOLDER}/${individualFile}"
+	log_message "Working on individualFile: ${individualFile}"
 
 	if [ -d "${SOURCE_FOLDER}/${individualFile}" ]; then
-		log_message "Found a directory! Ignoring: ${individualFile}"
+		log_message "Found a directory! Ignoring..."
 		continue
 	fi
 	# individualFile is a File (notFolder)!
@@ -110,7 +113,7 @@ for individualFile in ${folderContents}; do
 	qpdf --is-encrypted "${SOURCE_FOLDER}/${individualFile}" 2>&1 | tee -a "$( get_logFileName )"
 	isEncryptedResult=${?}
 	if [ ${isEncryptedResult} -eq 2 ]; then
-		log_message "File is NOT encrypted: ${individualFile}"
+		log_message "File is NOT encrypted!"
 		# if decrypt successful , remove original (if aplicable)
 		if [ "${MOVE_UNENCRYPTED}" == "true" ] ; then
 			log_message "Moving to target folder..."
@@ -128,34 +131,35 @@ for individualFile in ${folderContents}; do
 	if [ ${isEncryptedResult} -ne 0 ]; then
 		# Should not happen, because of unknown error Code
 		log_message "Unknown Error Code! (isEncryptedResult: ${isEncryptedResult})"
+		continue
 	fi # evaluate isEncryptedResult
 
 	# if we reach this point, we can safely say that ${isEncryptedResult} -eq 0, thus:
-	log_message "File IS encrypted: ${individualFile}"
+	log_message "File IS encrypted!"
 
-	log_message "Trying Passwords on file..."
+	log_message "Trying passwords on file..."
 	#log_message "DEBUG: passwordList: ${passwordList}"
+	teefileName=$( get_logFileName )
 	for individualPassword in ${passwordList}; do
 		# check if the file still exists, maybe it was decrypted with previous password?
 		if [ ! -f "${SOURCE_FOLDER}/${individualFile}" ]; then
 			continue
 		fi # file exists?
 
-		#log_message "DEBUG: individualPassword: ${individualPassword}"
-		qpdf --requires-password --password=${individualPassword} "${SOURCE_FOLDER}/${individualFile}" 2>&1 | tee -a "$( get_logFileName )"
+		qpdf --requires-password --password="${individualPassword}" "${SOURCE_FOLDER}/${individualFile}"
 		requirePasswordResult=${?}
-		if [ ${requirePasswordResult} -eq 0 ]; then
-			log_message "Password Mismatch!"
+		if [ ${requirePasswordResult} -eq 2 ]; then
+			# Should not happen, because of previous validations
+			log_message "File is NOT encrypted!"
 			continue
-		if
+		fi
 		if [ ${requirePasswordResult} -eq 1 ]; then
 			# Should not happen, because of unused error Code
 			log_message "Unused Error Code!"
 			continue
 		fi
-		if [ ${requirePasswordResult} -eq 2 ]; then
-			# Should not happen, because of previous validations
-			log_message "File is NOT encrypted!"
+		if [ ${requirePasswordResult} -eq 0 ]; then
+			log_message "Password Mismatch!"
 			continue
 		fi
 		if [ ${requirePasswordResult} -ne 3 ]; then
@@ -165,9 +169,9 @@ for individualFile in ${folderContents}; do
 		fi # evaluate requirePasswordResult
 
 		# if we reach this point, we can safely say that ${requirePasswordResult} -eq 3, thus:
-		log_message "Found password Match with file!"
+		log_message "Found password match with file!"
 
-		qpdf --decrypt --password=${individualPassword} "${SOURCE_FOLDER}/${individualFile}" "${TARGET_FOLDER}/${individualFile}" 2>&1 | tee -a "$( get_logFileName )"
+		qpdf --decrypt --password="${individualPassword}" "${SOURCE_FOLDER}/${individualFile}" "${TARGET_FOLDER}/${individualFile}" 2>&1 | tee -a "${teefileName}"
 		decryptResult=${?}
 		if [ ${decryptResult} -ne 0 ]; then
 			log_message "Could not decrypt file! (qpdf errCode: ${decryptResult})"

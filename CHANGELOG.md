@@ -27,6 +27,12 @@ The format is based on [Keep a Changelog][web_changelog], and this project adher
 
 > Please list here the soon-to-be-released features
 
+## 0.1.4 - 2025-09-14
+
+![img_upd]
+
+- fix logs and conditions
+
 ## 0.1.3 - 2025-09-09
 
 ![img_upd]

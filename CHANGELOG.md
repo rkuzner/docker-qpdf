@@ -27,6 +27,12 @@ The format is based on [Keep a Changelog][web_changelog], and this project adher
 
 > Please list here the soon-to-be-released features
 
+## 0.1.5 - 2025-09-17
+
+![img_upd]
+
+- remove output redirect in order to correctly evaluate qpdf exitCode
+
 ## 0.1.4 - 2025-09-14
 
 ![img_upd]

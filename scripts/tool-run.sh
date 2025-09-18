@@ -110,7 +110,7 @@ for individualFile in ${folderContents}; do
 	# individualFile is a File (notFolder)!
 
 	# check if file is encrypted
-	qpdf --is-encrypted "${SOURCE_FOLDER}/${individualFile}" 2>&1 | tee -a "$( get_logFileName )"
+	qpdf --is-encrypted "${SOURCE_FOLDER}/${individualFile}"
 	isEncryptedResult=${?}
 	if [ ${isEncryptedResult} -eq 2 ]; then
 		log_message "File is NOT encrypted!"

@@ -2,7 +2,7 @@
 
 dockerUserName="rkuzner"
 imageName="docker-qpdf"
-imageVersion="0.1.5"
+imageVersion="0.1.6"
 platformCodeList="amd64 arm64"
 
 # to run this commands, you should be logged to docker-hub!

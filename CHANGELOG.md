@@ -27,6 +27,12 @@ The format is based on [Keep a Changelog][web_changelog], and this project adher
 
 > Please list here the soon-to-be-released features
 
+## 0.1.6 - 2025-10-13
+
+![img_add]
+
+- hability to try to decrypt with empty password (known practice of some PDF viewers)
+
 ## 0.1.5 - 2025-09-17
 
 ![img_upd]

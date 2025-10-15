@@ -48,6 +48,8 @@ fi
 if [ ! -w "${SOURCE_FOLDER}" ]; then
 	log_message_and_exit 13 "Can not write on SOURCE_FOLDER: ${SOURCE_FOLDER}"
 fi
+log_message "Using SOURCE_FOLDER: ${SOURCE_FOLDER}"
+
 if [ ! -d "${TARGET_FOLDER}" ]; then
 	log_message_and_exit 14 "Invalid TARGET_FOLDER: ${TARGET_FOLDER}"
 fi
@@ -57,6 +59,8 @@ fi
 if [ ! -w "${TARGET_FOLDER}" ]; then
 	log_message_and_exit 16 "Can not write on TARGET_FOLDER: ${TARGET_FOLDER}"
 fi
+log_message "Using TARGET_FOLDER: ${TARGET_FOLDER}"
+
 if [ ! -d "${PROCESSED_FOLDER}" ]; then
 	log_message_and_exit 17 "Invalid PROCESSED_FOLDER: ${PROCESSED_FOLDER}"
 fi
@@ -66,7 +70,11 @@ fi
 if [ ! -w "${PROCESSED_FOLDER}" ]; then
 	log_message_and_exit 19 "Can not write on PROCESSED_FOLDER: ${PROCESSED_FOLDER}"
 fi
+log_message "Using PROCESSED_FOLDER: ${PROCESSED_FOLDER}"
 log_message "Found valid folders!"
+
+log_message "Using KEEP_SOURCEFILE: ${KEEP_SOURCEFILE}"
+log_message "Using MOVE_UNENCRYPTED: ${MOVE_UNENCRYPTED}"
 
 log_message "Checking for passwords file"
 if [ -z "${PASSWORDS_FILENAME}" ]; then
@@ -77,6 +85,7 @@ log_message "Found PASSWORDS_FILENAME environment var!"
 if [ ! -f "${PASSWORDS_FILENAME}" ]; then
 	log_message_and_exit 12 "Passwords file not-found: ${PASSWORDS_FILENAME}"
 fi
+log_message "Using PASSWORDS_FILENAME: ${PASSWORDS_FILENAME}"
 log_message "Found Passwords file!"
 
 lineCount=$( grep -e plain -e base64 "${PASSWORDS_FILENAME}" | wc -l )
@@ -95,6 +104,115 @@ fi
 log_message "Preparing passwords list"
 passwordList=$( grep -e plain "${PASSWORDS_FILENAME}" | cut -f2 -d"," )
 passwordList="${passwordList}"$'\n'$( grep -e base64 "${PASSWORDS_FILENAME}" | cut -f2 -d"," | base64 --decode )
+
+# encapsulates single password evaluation over a single file, useful within a for-loop
+function try_password_on_file() {
+	local thePassword=""
+	local sourceFullFileName=""
+	local targetFullFileName=""
+	local requirePasswordResult=0
+	local decryptResult=0
+
+	# process received params
+	while [[ ${#} -gt 0 ]]; do
+  		case ${1} in
+			-ep|--emptyPassword)
+			thePassword=""
+			#log_message "try_password_on_file(): Using empty password"
+			shift	# argument key
+			;;
+			-p|--password)
+			thePassword="${2}"
+			#log_message "try_password_on_file(): Using non-empty password"
+			shift	# argument key
+			shift	# argument value
+			;;
+			-sf|--sourceFile)
+			sourceFullFileName="${2}"
+			#log_message "try_password_on_file(): Using sourceFullFileName: ${sourceFullFileName}"
+			shift	# argument key
+			shift	# argument value
+			;;
+			-tf|--targetFile)
+			targetFullFileName="${2}"
+			#log_message "try_password_on_file(): Using targetFullFileName: ${targetFullFileName}"
+			shift	# argument key
+			shift	# argument value
+			;;
+			-*|--*)
+			log_message "try_password_on_file(): unknown option: ${1}"
+			return
+			;;
+		esac
+	done
+
+	# do some validations before working on decrypting files
+	# check if the sourcefile exists, maybe it was decrypted with previous password?
+	if [ ! -f "${sourceFullFileName}" ]; then
+		log_message "try_password_on_file(): source file not found (or not a file): ${sourceFullFileName}"
+		return
+	fi # source file exists?
+
+	# check if the sourcefile exists, maybe it was decrypted with previous password?
+	if [ -f "${targetFullFileName}" ]; then
+		log_message "try_password_on_file(): target file found: ${targetFullFileName}"
+		return
+	fi # source file exists?
+
+	qpdf --requires-password --password="${thePassword}" "${sourceFullFileName}"
+	requirePasswordResult=${?}
+	if [ ${requirePasswordResult} -eq 2 ]; then
+		# Should not happen, because of previous validations
+		log_message "try_password_on_file(): File is NOT encrypted!"
+		return
+	fi
+	if [ ${requirePasswordResult} -eq 1 ]; then
+		# Should not happen, because of unused error Code
+		log_message "try_password_on_file(): Unused Error Code!"
+		return
+	fi
+	if [ ${requirePasswordResult} -eq 0 ]; then
+		log_message "try_password_on_file(): Password Mismatch!"
+		return
+	fi
+	if [ ${requirePasswordResult} -ne 3 ]; then
+		# Should not happen, because of previous validations
+		log_message "try_password_on_file(): Unknown Error Code! (requirePasswordResult: ${requirePasswordResult})"
+		return
+	fi # evaluate requirePasswordResult
+
+	# if we reach this point, we can safely say that ${requirePasswordResult} -eq 3, thus:
+	log_message "try_password_on_file(): Found password match with file!"
+
+	local teefileName=$( get_logFileName )
+
+	qpdf --decrypt --password="${thePassword}" "${sourceFullFileName}" "${targetFullFileName}" 2>&1 | tee -a "${teefileName}"
+	decryptResult=${?}
+	if [ ${decryptResult} -ne 0 ]; then
+		log_message "try_password_on_file(): Could not decrypt file! (qpdf errCode: ${decryptResult})"
+		return
+	fi
+
+	# target file was created?
+	if [ ! -f "${targetFullFileName}" ]; then
+		log_message "try_password_on_file(): Decrypted target file missing! (maybe a subprocess error?)"
+		return
+	fi # target file was created?
+
+	# should match target's timestamps with source's timestamps
+	log_message "try_password_on_file(): Updating target's timestamps..."
+	touch -r "${sourceFullFileName}" "${targetFullFileName}"
+
+	# if decrypt successful, remove original (if aplicable)
+	if [ "${KEEP_SOURCEFILE}" == "true" ] ; then
+		log_message "try_password_on_file(): Moving source file to processed folder..."
+		mv -n "${sourceFullFileName}" "${PROCESSED_FOLDER}"
+	fi
+	if [ "${KEEP_SOURCEFILE}" == "false" ] ; then
+		log_message "try_password_on_file(): Removing source file..."
+		rm -f "${sourceFullFileName}"
+	fi
+}
 
 log_message "Iterating source files: ${SOURCE_FOLDER}"
 # must be able to iterate on filenames that have spaces on them
@@ -137,66 +255,19 @@ for individualFile in ${folderContents}; do
 	# if we reach this point, we can safely say that ${isEncryptedResult} -eq 0, thus:
 	log_message "File IS encrypted!"
 
+	log_message "Trying empty password on file..."
+	try_password_on_file --emptyPassword -sf "${SOURCE_FOLDER}/${individualFile}" -tf "${TARGET_FOLDER}/${individualFile}"
+
 	log_message "Trying passwords on file..."
 	#log_message "DEBUG: passwordList: ${passwordList}"
-	teefileName=$( get_logFileName )
 	for individualPassword in ${passwordList}; do
 		# check if the file still exists, maybe it was decrypted with previous password?
 		if [ ! -f "${SOURCE_FOLDER}/${individualFile}" ]; then
 			continue
 		fi # file exists?
 
-		qpdf --requires-password --password="${individualPassword}" "${SOURCE_FOLDER}/${individualFile}"
-		requirePasswordResult=${?}
-		if [ ${requirePasswordResult} -eq 2 ]; then
-			# Should not happen, because of previous validations
-			log_message "File is NOT encrypted!"
-			continue
-		fi
-		if [ ${requirePasswordResult} -eq 1 ]; then
-			# Should not happen, because of unused error Code
-			log_message "Unused Error Code!"
-			continue
-		fi
-		if [ ${requirePasswordResult} -eq 0 ]; then
-			log_message "Password Mismatch!"
-			continue
-		fi
-		if [ ${requirePasswordResult} -ne 3 ]; then
-			# Should not happen, because of previous validations
-			log_message "Unknown Error Code! (requirePasswordResult: ${requirePasswordResult})"
-			continue
-		fi # evaluate requirePasswordResult
-
-		# if we reach this point, we can safely say that ${requirePasswordResult} -eq 3, thus:
-		log_message "Found password match with file!"
-
-		qpdf --decrypt --password="${individualPassword}" "${SOURCE_FOLDER}/${individualFile}" "${TARGET_FOLDER}/${individualFile}" 2>&1 | tee -a "${teefileName}"
-		decryptResult=${?}
-		if [ ${decryptResult} -ne 0 ]; then
-			log_message "Could not decrypt file! (qpdf errCode: ${decryptResult})"
-			continue
-		fi
-
-		# target file was created?
-		if [ ! -f "${TARGET_FOLDER}/${individualFile}" ]; then
-			log_message "Decrypted target file missing! (maybe a subprocess error?)"
-			continue
-		fi # target file was created?
-
-		# should match target's timestamps with source's timestamps
-		log_message "Updating target's timestamps..."
-		touch -r "${SOURCE_FOLDER}/${individualFile}" "${TARGET_FOLDER}/${individualFile}"
-
-		# if decrypt successful, remove original (if aplicable)
-		if [ "${KEEP_SOURCEFILE}" == "true" ] ; then
-			log_message "Moving source file to processed folder..."
-			mv -n "${SOURCE_FOLDER}/${individualFile}" "${PROCESSED_FOLDER}"
-		fi
-		if [ "${KEEP_SOURCEFILE}" == "false" ] ; then
-			log_message "Removing source file..."
-			rm -f "${SOURCE_FOLDER}/${individualFile}"
-		fi
+		# call try_password_on_file function!
+		try_password_on_file -p "${individualPassword}" -sf "${SOURCE_FOLDER}/${individualFile}" -tf "${TARGET_FOLDER}/${individualFile}"
 	done
 done
 # restore originalIFS

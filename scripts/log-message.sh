@@ -7,6 +7,7 @@ logFolder="${logFolder}:-${defaultLogFolder}"
 
 COLUMNS=180
 
+# sets the logFile base name
 function set_logFileBaseName() {
 	local fileBaseName="${*}"
 	if [ -z "${fileBaseName}" ]; then
@@ -17,6 +18,7 @@ function set_logFileBaseName() {
 	echo "set_logFileBaseName(): logFileBaseName will be ${fileBaseName}"
 }
 
+# sets the logFolder name
 function set_logFolder() {
 	local folderName="${*}"
 	if [ -z "${folderName}" ]; then
@@ -31,6 +33,7 @@ function set_logFolder() {
 	echo "set_logFolder(): logFolder will be ${logFolder}"
 }
 
+# shows the full log file name
 function get_logFileName() {
 	echo "${logFolder}/${logFileBaseName}-$( date +%F ).log"
 }

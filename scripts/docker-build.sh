@@ -1,11 +1,55 @@
 #!/bin/bash
+# v0.2.0 by RK on 2026-05-07
 
-dockerUserName="rkuzner"
-imageName="docker-qpdf"
-imageVersion="0.1.6"
-platformCodeList="amd64 arm64"
+usage() {
+    echo "Usage: $(basename "$0") [--user dockerUserName] [--name imageName] [--version imageVersion] [--help]"
+    echo ""
+    echo "Values can also be set in docker-build.conf (searched in current dir, then script dir)."
+    echo ""
+    echo "  --user     Docker Hub username"
+    echo "  --name     Image name"
+    echo "  --version  Image version/tag"
+    echo "  --help     Show this help"
+    exit 0
+}
 
-# to run this commands, you should be logged to docker-hub!
+# Load config file (current dir takes precedence over script dir)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="docker-build.conf"
+
+if [ -f "./${CONFIG_FILE}" ]; then
+    source "./${CONFIG_FILE}"
+elif [ -f "${SCRIPT_DIR}/${CONFIG_FILE}" ]; then
+    source "${SCRIPT_DIR}/${CONFIG_FILE}"
+fi
+
+# CLI arguments override config file values
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --user)    dockerUserName="$2"; shift 2 ;;
+        --name)    imageName="$2";      shift 2 ;;
+        --version) imageVersion="$2";   shift 2 ;;
+        --help)    usage ;;
+        *) echo "Unknown argument: $1"; echo ""; usage ;;
+    esac
+done
+
+# Validate required values
+errors=()
+[ -z "${dockerUserName}" ] && errors+=("dockerUserName is required (--user or docker-build.conf)")
+[ -z "${imageName}" ]      && errors+=("imageName is required (--name or docker-build.conf)")
+[ -z "${imageVersion}" ]   && errors+=("imageVersion is required (--version or docker-build.conf)")
+[ ! -f "./Dockerfile" ]    && errors+=("no Dockerfile found in the current directory")
+
+if [ ${#errors[@]} -gt 0 ]; then
+    for err in "${errors[@]}"; do echo "Error: ${err}"; done
+    echo ""
+    usage
+fi
+
+platformCodeList="${platformCodeList:-amd64 arm64}"
+
+# Log in to Docker Hub if needed
 docker info | grep -q "Username"
 isLogged=$?
 if [ ${isLogged} -gt 0 ]; then
@@ -40,12 +84,10 @@ function create_manifest() {
 }
 
 function build_image_and_create_manifest() {
-    # build platform specific images
     for individualPlatformCode in ${platformCodeList}; do
         build_image ${individualPlatformCode}
     done
 
-    # create manifests
     for label in "${imageVersion}" "latest"; do
         create_manifest ${label}
     done
@@ -67,12 +109,9 @@ function buildx_images() {
     done
 
     for label in "${imageVersion}" "latest"; do
-        echo "DEBUG: docker buildx build --platform ${buildxPlatformList} -t ${dockerUserName}/${imageName}:${label} --push ."
         docker-buildx build --platform ${buildxPlatformList} -t ${dockerUserName}/${imageName}:${label} --push .
     done
 }
 
-
-# now create images
 # old way: build_image_and_create_manifest
 buildx_images

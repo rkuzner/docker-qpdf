@@ -26,6 +26,8 @@ log_message "-+*+- -+*+- -+*+- -+*+- -+*+-"
 log_message "-+*+-  Tool-Run  START  -+*+-"
 log_message "-+*+- -+*+- -+*+- -+*+- -+*+-"
 
+log_rotate
+
 if [ -f "${configFileName}" ]; then
 	log_message "Found Config file!"
 else

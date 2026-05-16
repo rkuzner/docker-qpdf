@@ -28,6 +28,8 @@ log_message "-+*+- -+*+- -+*+- -+*+- -+*+-"
 log_message "-+*+-  Container START  -+*+-"
 log_message "-+*+- -+*+- -+*+- -+*+- -+*+-"
 
+log_rotate
+
 log_message "Preparing user: ${userName}..."
 
 PUID=${PUID:-1000}
